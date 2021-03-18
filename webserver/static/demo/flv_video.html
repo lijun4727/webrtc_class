@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>学习webrtc</title>
+</head>
+
+<body>
+    <script src="https://cdn.bootcdn.net/ajax/libs/flv.js/1.5.0/flv.min.js"></script>
+	<video id="videoElement"></video>
+	<script>
+		if (flvjs.isSupported()) {
+			var videoElement = document.getElementById('videoElement');
+			var flvPlayer = flvjs.createPlayer({
+				type: 'flv',
+				url: 'http://10.10.8.113:7001/live/movie.flv'
+			});
+			flvPlayer.attachMediaElement(videoElement);
+			flvPlayer.load();
+			flvPlayer.play();
+		}
+	</script>
+</body>
+
+</html>

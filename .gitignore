@@ -1,0 +1,11 @@
+webserver/test.jpg
+webserver/video_stream.mkv
+test_so_lib/build
+ffmpeg_base/build
+ffmpeg_base/include
+ffmpeg_base/lib
+webserver/main
+webserver/main.exe
+webserver/__debug_bin
+webserver/nohup.out
+webserver/webserver

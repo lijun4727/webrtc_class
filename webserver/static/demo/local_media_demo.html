@@ -1,0 +1,169 @@
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+    <style>
+        video {
+            width: 320px;
+            height: 240px;
+            border: 1px solid black;
+        }
+
+        div {
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>    
+    <div id="setup">
+        <P>WebRTC Demo--调用本地摄像头和麦克风</P>
+        <button id="test_websocket">测试WebSocket</button>
+    </div>
+    <br />
+    <div style="width: 30%;vertical-align: top;">
+        <div>
+            <video id="myVideo" autoplay="autoplay" controls muted="true"></video>
+            <video id="myAudio" autoplay="autoplay" controls muted="true"></video>
+        </div>
+    </div>
+
+    <script src="/static/js/adapter.js" type="text/javascript"></script>
+    <script src="/static/js/jquery.min.js" type="text/javascript"></script>
+    <script src="/static/js/socket.io.js" type="text/javascript"></script>
+
+    <script>
+        var socket = io("https://" + window.location.host);
+        var test_websocket = $("#test_websocket");
+        test_websocket.click(function () {
+            socket.emit("test", "test1111");
+        });     
+
+        function fakeClick(obj) {
+            var ev = document.createEvent("MouseEvents");
+            ev.initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+            obj.dispatchEvent(ev);
+        }
+
+        function exportRaw(name, data) {
+            var urlObject = window.URL || window.webkitURL || window;
+            //var export_blob = new Blob([data]);
+            var save_link = document.createElementNS("http://www.w3.org/1999/xhtml", "a")
+            save_link.href = urlObject.createObjectURL(data);
+            save_link.download = name;
+            fakeClick(save_link);
+        }
+
+        var myVideoStream, myVideo, mediaVideoRecorder, myAudioStream, myAudio, mediaAudioRecorder;
+        var videoChunks = [];
+        var audioChunks = [];
+
+        window.onload = function () {
+            myVideo = document.getElementById("myVideo");
+            myAudio = document.getElementById("myAudio");
+
+            getMedia();
+        }
+
+        //获取本地媒体
+        function getMedia() {
+            navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+            navigator.getUserMedia({ "audio": false, "video": true }, gotVideoUserMedia, didntGetUserMedia);
+            navigator.getUserMedia({ "audio": true, "video": false }, gotAudioUserMedia, didntGetUserMedia);
+        }
+
+        //成功获取媒体
+        var videoRequest = new XMLHttpRequest();
+        function gotVideoUserMedia(stream) {
+            myVideoStream = stream;
+            //显示本地视频
+            myVideo.srcObject = stream;
+
+            var options = {
+                videoBitsPerSecond: 250000,
+                mimeType: "video/webm;codecs=h264"
+            }
+            mediaVideoRecorder = new MediaRecorder(stream, options);
+            mediaVideoRecorder.ondataavailable = function (e) {
+                //videoChunks.push(e.data);
+                // if(videoChunks.length <= 1)
+                // {
+                //     exportRaw("video_stream", e.data);
+                // }
+
+                var blob_formData = new FormData();
+                blob_formData.append("codecs", "h264");
+                blob_formData.append("kind", "video");
+                blob_formData.append("size", e.data.size);
+                blob_formData.append("data", e.data);
+                videoRequest.open("POST", "/upload");
+                videoRequest.send(blob_formData);
+
+                //var arraybuffer_formData = new FormData();
+                // e.data.arrayBuffer().then(function (buffer) {
+                //     // var array = new Uint8Array(buffer);
+                //     // socket.emit("pushstream", array);
+
+                //     arraybuffer_formData.append("codecs", "h264");
+                //     arraybuffer_formData.append("kind", "video");
+                //     arraybuffer_formData.append("size", e.data.size);               
+                //     const vBlob = new Blob([buffer], {'type':'video/webm;codecs=h264'})
+                //     arraybuffer_formData.append("data", buffer);
+                //     videoRequest.open("POST", "/upload");
+                //     videoRequest.send(arraybuffer_formData);
+                // }
+                //);
+
+                // var formData = new FormData();
+                // e.data.text().then(function (text) {
+                //     formData.append("kind", "video");
+                //     formData.append("size", e.data.size);
+                //     formData.append("codecs", "h264");
+                //     formData.append("data", text);
+                //     videoRequest.open("POST", "/upload");
+                //     videoRequest.send(formData);
+                // }
+                // );
+            }
+            mediaVideoRecorder.start(1000 / 33);
+        }
+
+        var audioRequest = new XMLHttpRequest();
+        function gotAudioUserMedia(stream) {
+            myAudioStream = stream;
+            //显示本地音频
+            myAudio.srcObject = stream;
+
+            var options = {
+                audioBitsPerSecond: 12800,
+            }
+            mediaAudioRecorder = new MediaRecorder(stream, options);
+            mediaAudioRecorder.ondataavailable = function (e) {
+                //audioChunks.push(e.data);
+                // if(audioChunks.length <= 1)
+                // {
+                //     exportRaw("audio_stream", e.data);
+                // }
+
+                var formData = new FormData();
+                e.data.text().then(function (text) {
+                    formData.append("kind", "audio");
+                    formData.append("size", e.data.size);
+                    formData.append("codecs", "opus");
+                    formData.append("data", text);
+                    // audioRequest.open("POST", "/upload");
+                    // audioRequest.send(formData);
+                }
+                );
+            }
+            mediaAudioRecorder.start(1000 / 33);
+        }
+
+        function didntGetUserMedia() {
+            console.log("couldn't get videp")
+        }
+    </script>
+</body>
+
+</html>
